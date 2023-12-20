@@ -1,6 +1,7 @@
 import java.sql.*;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Properties;
 
 import java.io.IOException;
@@ -30,12 +31,12 @@ public class JdbcUtils {
     }
 
     //建立与数据库的连接
-    public static Connection getConnection() throws SQLException {
+    private static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(url, username, password);
     }
 
     //资源释放
-    public static void release(Connection conn, PreparedStatement st, ResultSet rs) {
+    private static void release(Connection conn, PreparedStatement st, ResultSet rs) {
         if (rs != null) {
             try {
                 rs.close();
@@ -60,9 +61,9 @@ public class JdbcUtils {
     }
 
 
-    //  查   ：一次查一张表，传入需要查看的字段名、所查的表名、通过什么id查、查的id号
-    //  所需查的字段量小于应输入字段量时，字段输入null
-    public static void select(String columnName1, String columnName2, String columnName3, String columnName4, String tableName, String selectColumnName, int id) {
+    //  查   ：一次查一张表，传入需要查看的字段名、所查的表名、通过什么字段查、查的字段内容
+    //  所需查的字段量小于应输入字段量时，所需查的字段量后的字段输入null
+    public static void selectThreeTable(String columnName1, String columnName2, String columnName3, String columnName4, String tableName, String selectColumnName, Object param) {
         Connection conn = null;
         PreparedStatement st = null;
         ResultSet rs = null;
@@ -77,14 +78,14 @@ public class JdbcUtils {
             conn = getConnection();
             conn.setAutoCommit(false);
             st = conn.prepareStatement(sql);
-            st.setInt(1, id);
+            st.setObject(1, param);
             rs = st.executeQuery();
             if (rs.next()) {
                 System.out.print(rs.getString(columnName1) + " ");
                 if (columnName2 != null) System.out.print(rs.getString(columnName2) + " ");
                 if (columnName3 != null) System.out.print(rs.getString(columnName3) + " ");
                 if (columnName4 != null) System.out.print(rs.getString(columnName4) + " ");
-                System.out.print(rs.getString(selectColumnName) + " ");
+                System.out.println();
             }
             conn.commit();
         } catch (SQLException e) {
@@ -94,6 +95,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("select failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -145,8 +147,9 @@ public class JdbcUtils {
                 System.out.println("wrong input");
                 return;
             }                                                   //根据需求判断手动赋值
-
-            if (st.executeUpdate() > 0) System.out.println("product table update successful");
+            int i=st.executeUpdate();
+            if (i> 0) System.out.println("product table update successful  "+i+" rows affected");
+            else System.out.println("product table update failing");
             conn.commit();
         } catch (SQLException e) {
             try {
@@ -155,6 +158,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("product table update failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -231,9 +235,8 @@ public class JdbcUtils {
                 release(conn, st, rs);
                 return;                                             //根据需求判断手动赋值
             }
-            System.out.println(st);
-
-            if (st.executeUpdate() > 0) System.out.println("order_infro table update successful");
+            int i=st.executeUpdate();
+            if (i > 0) System.out.println("order_infro table update successful "+i+" rows affected");
             conn.commit();
         } catch (SQLException e) {
             try {
@@ -242,6 +245,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("order_infro table update failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -260,7 +264,8 @@ public class JdbcUtils {
             Date d = orderTimeUpdate.getTime();
             st.setDate(1, new java.sql.Date(d.getTime()));
             st.setInt(2,orderId);//根据需求手动赋值
-            if (st.executeUpdate() > 0) System.out.println("order table update successful");
+            int i=st.executeUpdate();
+            if ( i> 0) System.out.println("order table update successful  "+i+" rows affected");
             conn.commit();
         } catch (SQLException e) {
             try {
@@ -269,6 +274,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("order table update failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -297,6 +303,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("product table insert failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -342,6 +349,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("order_infro table insert failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -369,6 +377,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("order table update failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -400,6 +409,7 @@ public class JdbcUtils {
 
 
             if (st.executeUpdate() > 0) System.out.println(" delete from product table  successful");
+            else  System.out.println("delete from product table  failing");
             conn.commit();
 
 
@@ -410,6 +420,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("delete from product table  failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -435,6 +446,7 @@ public class JdbcUtils {
             else st.setInt(1, proId);             //手动赋值
 
             if (st.executeUpdate() > 0) System.out.println("delete from order_infro table  successful");
+            else System.out.println("delete from order_infro table failing");
             conn.commit();
         } catch (SQLException e) {
             try {
@@ -443,6 +455,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("delete from order_infro table failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
@@ -468,6 +481,7 @@ public class JdbcUtils {
 
 
             if (st.executeUpdate() > 0) System.out.println("delete from order table successful");
+            else System.out.println("delete from order table failing");
             conn.commit();
 
         } catch (SQLException e) {
@@ -477,6 +491,7 @@ public class JdbcUtils {
                 e1.printStackTrace();
             }
             e.printStackTrace();
+            System.out.println("delete from order table failing");
         } finally {
             JdbcUtils.release(conn, st, rs);
         }
